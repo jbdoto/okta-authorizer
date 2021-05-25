@@ -1,0 +1,8 @@
+{
+  "name": "okta-lambda-authorizer",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@okta/jwt-verifier": "^2.1.0"
+  }
+}

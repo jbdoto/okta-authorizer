@@ -1,0 +1,68 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Deploys a Lambda-based authorizer.
+
+Parameters:
+  Issuer:
+    Type: String
+    Default: "https://<your_issuer>/oauth2/default"
+  Audience:
+    Type: String
+    Default: "api://default"
+
+Resources:
+
+  AuthorizerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub lambda.${AWS::Region}.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub "${AWS::StackName}-Logging"
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                Resource:
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-auth-function:*
+
+  AuthLambdaHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Description: API Gateway Okta Authorizer function
+      Handler: authorizer.handler
+      MemorySize: 128
+      Timeout: 30
+      Runtime: nodejs14.x
+      Role: !GetAtt AuthorizerRole.Arn
+      Tracing: Active
+      FunctionName: !Sub "${AWS::StackName}-auth-function"
+      Environment:
+        Variables:
+          ISSUER: !Sub ${Issuer}
+          AUDIENCE: !Sub ${Audience}
+
+Outputs:
+  AuthHandlerArn:
+    Description: ARN for Authorizer Lambda
+    Value: !GetAtt AuthLambdaHandler.Arn
+    Export:
+      Name: AuthHandlerArn
+      Value: !GetAtt AuthLambdaHandler.Arn

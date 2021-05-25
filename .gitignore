@@ -1,0 +1,4 @@
+packaged-template.yaml
+src/node_modules
+.idea
+*.zip
